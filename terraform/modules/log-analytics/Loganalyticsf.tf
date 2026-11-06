@@ -1,19 +1,3 @@
-variable "lawname" {
-  type = string
-}
-
-variable "rgname" {
-  type = string
-}
-
-variable "location" {
-  type = string
-}
-
-variable "lawretention" {
-  type = number
-}
-
 resource "azurerm_log_analytics_workspace" "this" {
   name                = var.lawname
   location            = var.location
