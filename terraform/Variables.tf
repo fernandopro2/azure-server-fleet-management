@@ -37,3 +37,11 @@ variable "vms" {
     sku     = string
   }))
 }
+
+variable "lawretention" {
+  type = number
+}
+
+variable "bastionsubnetprefix" {
+  type = string
+}

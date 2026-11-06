@@ -30,6 +30,10 @@ variable "nsgname" {
   type = string
 }
 
+variable "bastionsubnetprefix" {
+  type = string
+}
+
 resource "azurerm_virtual_network" "this" {
   name                = var.vnetname
   location            = var.location
@@ -54,7 +58,7 @@ resource "azurerm_public_ip" "bastion" {
 resource "azurerm_subnet" "bastion" {
   name                 = "AzureBastionSubnet"
   virtual_network_name = azurerm_virtual_network.this.name
-  address_prefixes     = ["10.10.1.0/26"]
+  address_prefixes     = [var.bastionsubnetprefix]
   resource_group_name  = var.rgname
 }
 
