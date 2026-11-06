@@ -22,14 +22,6 @@ variable "subnetname" {
   type = string
 }
 
-variable "bastionname" {
-  type = string
-}
-
 variable "nsgname" {
-  type = string
-}
-
-variable "bastionsubnetprefix" {
   type = string
 }
