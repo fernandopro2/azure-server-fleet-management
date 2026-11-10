@@ -1,7 +1,9 @@
 resource "azurerm_monitor_data_collection_rule" "windows" {
-  name                = var.dcrname
+  name                = "windows-${var.dcrname}"
   resource_group_name = var.rgname
   location            = var.location
+  description         = "Collect Windows performance counters and event logs."
+
   destinations {
     log_analytics {
       name                  = "log-analytics"
@@ -41,4 +43,52 @@ resource "azurerm_monitor_data_collection_rule_association" "windows" {
   name                    = "${var.dcrname}-${each.value.computer_name}"
   target_resource_id      = each.value.id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.windows.id
+  depends_on = [ azurerm_monitor_data_collection_rule.windows ]
+}
+
+resource "azurerm_monitor_data_collection_rule" "linux" {
+  name                = "linux-${var.dcrname}"
+  resource_group_name = var.rgname
+  location            = var.location
+  description         = "Collect Linux performance counters and syslog."
+
+  destinations {
+    log_analytics {
+      name                  = "log-analytics"
+      workspace_resource_id = var.workspaceid
+    }
+  }
+  data_flow {
+    streams      = ["Microsoft-Perf"]
+    destinations = ["log-analytics"]
+  }
+  data_flow {
+    streams      = ["Microsoft-Syslog"]
+    destinations = ["log-analytics"]
+  }
+  data_sources {
+    syslog {
+
+      name           = var.linux_monitoring.syslog["name"]
+      streams        = var.linux_monitoring.syslog["streams"]
+      facility_names = var.linux_monitoring.syslog["facility_names"]
+      log_levels     = var.linux_monitoring.syslog["log_levels"]
+
+    }
+    performance_counter {
+      name                          = "linux-performance-counters"
+      streams                       = ["Microsoft-Perf"]
+      sampling_frequency_in_seconds = var.linux_monitoring.sampling_frequency_in_seconds
+
+      counter_specifiers = var.linux_monitoring.performance_counters
+    }
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "linux" {
+  for_each                = var.linux_virtual_machines
+  name                    = "${var.dcrname}-${each.value.computer_name}"
+  target_resource_id      = each.value.id
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.linux.id
+  depends_on = [ azurerm_monitor_data_collection_rule.linux ]
 }
