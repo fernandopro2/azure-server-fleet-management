@@ -14,7 +14,7 @@ module "networking" {
   nsgname          = local.nsgname
 }
 
-module "virtual-machines" {
+module "virtual-machine" {
   source    = "./modules/virtual-machine"
   rgname    = azurerm_resource_group.this.name
   location  = azurerm_resource_group.this.location
@@ -30,6 +30,15 @@ module "log-analytics" {
   lawretention = var.lawretention
 }
 
-output "lawid" {
-  value = module.log-analytics.lawid
+module "azure-monitor" {
+  source                   = "./modules/azure-monitor"
+  workspaceid              = module.log-analytics.lawid
+  rgname                   = local.rgname
+  location                 = var.location
+  dcrname                  = local.dcrname
+  windows_monitoring       = var.windows_monitoring
+  windows_virtual_machines = module.virtual-machine.windows_virtual_machines
+  linux_virtual_machines   = module.virtual-machine.linux_virtual_machines
+  linux_monitoring         = var.linux_monitoring
 }
+
