@@ -52,3 +52,11 @@ variable "windows_virtual_machines" {
 
 variable "linux_virtual_machines" {
 }
+
+variable "alertrulename" {
+  type = string
+}
+
+variable "vms_ids" {
+
+}

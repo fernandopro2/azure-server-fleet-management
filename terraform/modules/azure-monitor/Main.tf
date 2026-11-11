@@ -43,7 +43,7 @@ resource "azurerm_monitor_data_collection_rule_association" "windows" {
   name                    = "${var.dcrname}-${each.value.computer_name}"
   target_resource_id      = each.value.id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.windows.id
-  depends_on = [ azurerm_monitor_data_collection_rule.windows ]
+  depends_on              = [azurerm_monitor_data_collection_rule.windows]
 }
 
 resource "azurerm_monitor_data_collection_rule" "linux" {
@@ -90,5 +90,28 @@ resource "azurerm_monitor_data_collection_rule_association" "linux" {
   name                    = "${var.dcrname}-${each.value.computer_name}"
   target_resource_id      = each.value.id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.linux.id
-  depends_on = [ azurerm_monitor_data_collection_rule.linux ]
+  depends_on              = [azurerm_monitor_data_collection_rule.linux]
+}
+
+resource "azurerm_monitor_metric_alert" "cpu" {
+  name                = var.alertrulename
+  resource_group_name = var.rgname
+  description         = "Alert when VM CPU usage exceeds 80% for 15 minutes."
+
+  scopes      = var.vms_ids
+  severity    = 2
+  enabled     = true
+  frequency   = "PT5M"
+  window_size = "PT15M"
+
+  target_resource_type     = "Microsoft.Compute/virtualMachines"
+  target_resource_location = var.location
+
+  criteria {
+    metric_namespace = "Microsoft.Compute/VirtualMachines"
+    metric_name      = "Percentage CPU"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 80
+  }
 }

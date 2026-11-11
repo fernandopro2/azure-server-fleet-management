@@ -40,5 +40,6 @@ module "azure-monitor" {
   windows_virtual_machines = module.virtual-machine.windows_virtual_machines
   linux_virtual_machines   = module.virtual-machine.linux_virtual_machines
   linux_monitoring         = var.linux_monitoring
+  alertrulename            = local.alertrulename
+  vms_ids                  = module.virtual-machine.vms_ids
 }
-
