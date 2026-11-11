@@ -56,7 +56,3 @@ variable "linux_virtual_machines" {
 variable "alertrulename" {
   type = string
 }
-
-variable "vms_ids" {
-
-}

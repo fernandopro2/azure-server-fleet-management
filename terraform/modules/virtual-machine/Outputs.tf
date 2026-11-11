@@ -1,12 +1,13 @@
 output "linux_virtual_machines" {
-  value = azurerm_linux_virtual_machine.this
+value = {
+    for name, vm in azurerm_linux_virtual_machine.this :
+    name => vm.id
+  }
 }
 
 output "windows_virtual_machines" {
-  value = azurerm_windows_virtual_machine.this
-}
-
-output "vms_ids" {
-  value = concat(values(azurerm_windows_virtual_machine.this).*.id,
-  values(azurerm_linux_virtual_machine.this).*.id)
+value = {
+    for name, vm in azurerm_windows_virtual_machine.this :
+    name => vm.id
+  }
 }

@@ -40,8 +40,8 @@ resource "azurerm_monitor_data_collection_rule" "windows" {
 
 resource "azurerm_monitor_data_collection_rule_association" "windows" {
   for_each                = var.windows_virtual_machines
-  name                    = "${var.dcrname}-${each.value.computer_name}"
-  target_resource_id      = each.value.id
+  name                    = "${var.dcrname}-${base64encode(each.value)}"
+  target_resource_id      = each.value
   data_collection_rule_id = azurerm_monitor_data_collection_rule.windows.id
   depends_on              = [azurerm_monitor_data_collection_rule.windows]
 }
@@ -87,8 +87,8 @@ resource "azurerm_monitor_data_collection_rule" "linux" {
 
 resource "azurerm_monitor_data_collection_rule_association" "linux" {
   for_each                = var.linux_virtual_machines
-  name                    = "${var.dcrname}-${each.value.computer_name}"
-  target_resource_id      = each.value.id
+  name                    = "${var.dcrname}-${basename(each.value)}"
+  target_resource_id      = each.value
   data_collection_rule_id = azurerm_monitor_data_collection_rule.linux.id
   depends_on              = [azurerm_monitor_data_collection_rule.linux]
 }
@@ -98,7 +98,8 @@ resource "azurerm_monitor_metric_alert" "cpu" {
   resource_group_name = var.rgname
   description         = "Alert when VM CPU usage exceeds 80% for 15 minutes."
 
-  scopes      = var.vms_ids
+  scopes = concat(values(var.windows_virtual_machines),
+  values(var.linux_virtual_machines))
   severity    = 2
   enabled     = true
   frequency   = "PT5M"
