@@ -40,7 +40,7 @@ resource "azurerm_monitor_data_collection_rule" "windows" {
 
 resource "azurerm_monitor_data_collection_rule_association" "windows" {
   for_each                = var.windows_virtual_machines
-  name                    = "${var.dcrname}-${base64encode(each.value)}"
+  name                    = "${var.dcrname}-${basename(each.value)}"
   target_resource_id      = each.value
   data_collection_rule_id = azurerm_monitor_data_collection_rule.windows.id
   depends_on              = [azurerm_monitor_data_collection_rule.windows]
@@ -94,7 +94,7 @@ resource "azurerm_monitor_data_collection_rule_association" "linux" {
 }
 
 resource "azurerm_monitor_metric_alert" "cpu" {
-  name                = var.alertrulename
+  name                = "${var.alertrulename}-cpu"
   resource_group_name = var.rgname
   description         = "Alert when VM CPU usage exceeds 80% for 15 minutes."
 
@@ -114,5 +114,28 @@ resource "azurerm_monitor_metric_alert" "cpu" {
     aggregation      = "Average"
     operator         = "GreaterThan"
     threshold        = 80
+  }
+}
+
+resource "azurerm_monitor_metric_alert" "heartbeat" {
+  name                = "${var.alertrulename}-heartbeat"
+  resource_group_name = var.rgname
+  description         = "Alert when there's no anwser for 5 minutes or more."
+
+  scopes      = [var.workspaceid]
+  severity    = 2
+  enabled     = true
+  frequency   = "PT1M"
+  window_size = "PT5M"
+
+  target_resource_type     = "Microsoft.OperationalInsights/workspaces"
+  target_resource_location = var.location
+
+  criteria {
+    metric_namespace = "Microsoft.OperationalInsights/workspaces"
+    metric_name      = "Heartbeat"
+    aggregation      = "Count"
+    operator         = "LessThan"
+    threshold        = 5
   }
 }
