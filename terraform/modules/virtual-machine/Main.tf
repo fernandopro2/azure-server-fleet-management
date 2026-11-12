@@ -44,6 +44,10 @@ resource "azurerm_windows_virtual_machine" "this" {
   admin_username = "adminuser"
   // configurar keyvault
   admin_password = data.azurerm_key_vault_secret.windows-pass.value
+  identity {
+    type = "SystemAssigned"
+  }
+
 }
 
 resource "azurerm_linux_virtual_machine" "this" {
