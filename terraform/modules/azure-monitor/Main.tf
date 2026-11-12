@@ -120,7 +120,7 @@ resource "azurerm_monitor_metric_alert" "cpu" {
 resource "azurerm_monitor_metric_alert" "heartbeat" {
   name                = "${var.alertrulename}-heartbeat"
   resource_group_name = var.rgname
-  description         = "Alert when there's no anwser for 5 minutes or more."
+  description         = "Alert when there's no signal for 5 minutes or more."
 
   scopes      = [var.workspaceid]
   severity    = 2
@@ -137,5 +137,40 @@ resource "azurerm_monitor_metric_alert" "heartbeat" {
     aggregation      = "Count"
     operator         = "LessThan"
     threshold        = 5
+    dimension {
+      name     = "Computer"
+      operator = "Include"
+      values = [
+        "SRV-W-DEV-E043",
+        "SRV-L-DEV-ED96"
+      ]
+    }
+  }
+  depends_on = [
+    azurerm_monitor_scheduled_query_rules_log.heartbeat
+  ]
+}
+
+
+resource "azurerm_monitor_scheduled_query_rules_log" "heartbeat" {
+  name                = "${var.alertrulename}-heartbeat-log-to-metric"
+  resource_group_name = var.rgname
+  location            = var.location
+
+  description    = "Convert Azure Monitor Agent Heartbeat records into Azure Monitor metrics."
+  data_source_id = var.workspaceid
+  enabled        = true
+
+  criteria {
+    metric_name = "Heartbeat"
+
+    dimension {
+      name     = "Computer"
+      operator = "Include"
+      values = [
+        "SRV-W-DEV-E043",
+        "SRV-L-DEV-ED96"
+      ]
+    }
   }
 }
