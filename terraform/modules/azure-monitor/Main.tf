@@ -40,8 +40,8 @@ resource "azurerm_monitor_data_collection_rule" "windows" {
 
 resource "azurerm_monitor_data_collection_rule_association" "windows" {
   for_each                = var.windows_virtual_machines
-  name                    = "${var.dcrname}-${basename(each.value)}"
-  target_resource_id      = each.value
+  name                    = "${var.dcrname}-${basename(each.value.computer_name)}"
+  target_resource_id      = each.value.id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.windows.id
   depends_on              = [azurerm_monitor_data_collection_rule.windows]
 }
@@ -87,8 +87,8 @@ resource "azurerm_monitor_data_collection_rule" "linux" {
 
 resource "azurerm_monitor_data_collection_rule_association" "linux" {
   for_each                = var.linux_virtual_machines
-  name                    = "${var.dcrname}-${basename(each.value)}"
-  target_resource_id      = each.value
+  name                    = "${var.dcrname}-${basename(each.value.computer_name)}"
+  target_resource_id      = each.value.id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.linux.id
   depends_on              = [azurerm_monitor_data_collection_rule.linux]
 }
@@ -98,8 +98,8 @@ resource "azurerm_monitor_metric_alert" "cpu" {
   resource_group_name = var.rgname
   description         = "Alert when VM CPU usage exceeds 80% for 15 minutes."
 
-  scopes = concat(values(var.windows_virtual_machines),
-  values(var.linux_virtual_machines))
+  scopes = concat(values(var.windows_virtual_machines).*.id,
+  values(var.linux_virtual_machines).*.id)
   severity    = 2
   enabled     = true
   frequency   = "PT5M"
@@ -140,10 +140,8 @@ resource "azurerm_monitor_metric_alert" "heartbeat" {
     dimension {
       name     = "Computer"
       operator = "Include"
-      values = [
-        "SRV-W-DEV-E043",
-        "SRV-L-DEV-ED96"
-      ]
+      values = concat(values(var.windows_virtual_machines).*.computer_name,
+      values(var.linux_virtual_machines).*.computer_name)
     }
   }
   depends_on = [
@@ -167,10 +165,8 @@ resource "azurerm_monitor_scheduled_query_rules_log" "heartbeat" {
     dimension {
       name     = "Computer"
       operator = "Include"
-      values = [
-        "SRV-W-DEV-E043",
-        "SRV-L-DEV-ED96"
-      ]
+      values = concat(values(var.windows_virtual_machines).*.computer_name,
+      values(var.linux_virtual_machines).*.computer_name)
     }
   }
 }
