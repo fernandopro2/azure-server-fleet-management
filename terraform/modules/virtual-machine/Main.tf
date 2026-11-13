@@ -32,6 +32,7 @@ resource "azurerm_windows_virtual_machine" "this" {
   os_disk {
     storage_account_type = each.value.storage
     caching              = "None"
+    name = "${each.value.computername}-os-disk"
   }
   network_interface_ids = [azurerm_network_interface.this[each.key].id]
   size                  = each.value.size
