@@ -32,7 +32,7 @@ resource "azurerm_windows_virtual_machine" "this" {
   os_disk {
     storage_account_type = each.value.storage
     caching              = "None"
-    name = "${each.value.computername}-os-disk"
+    name                 = "${each.value.computername}-OS-DISK"
   }
   network_interface_ids = [azurerm_network_interface.this[each.key].id]
   size                  = each.value.size
@@ -48,7 +48,7 @@ resource "azurerm_windows_virtual_machine" "this" {
   identity {
     type = "SystemAssigned"
   }
-
+  patch_assessment_mode = "AutomaticByPlatform"
 }
 
 resource "azurerm_linux_virtual_machine" "this" {
@@ -63,6 +63,8 @@ resource "azurerm_linux_virtual_machine" "this" {
   os_disk {
     storage_account_type = each.value.storage
     caching              = "None"
+    name                 = "${each.value.computername}-OS-DISK"
+
   }
   network_interface_ids = [azurerm_network_interface.this[each.key].id]
   size                  = each.value.size
@@ -78,6 +80,7 @@ resource "azurerm_linux_virtual_machine" "this" {
   disable_password_authentication = false
   admin_username                  = "adminuser"
   admin_password                  = data.azurerm_key_vault_secret.linux-pass.value // configurar keyvault
+  patch_assessment_mode           = "AutomaticByPlatform"
 }
 
 resource "azurerm_virtual_machine_extension" "entra-ssh" {

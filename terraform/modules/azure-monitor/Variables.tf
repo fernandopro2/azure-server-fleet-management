@@ -56,3 +56,7 @@ variable "linux_virtual_machines" {
 variable "alertrulename" {
   type = string
 }
+
+variable "rgid" {
+  type = string
+}

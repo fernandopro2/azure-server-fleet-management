@@ -35,6 +35,7 @@ module "azure-monitor" {
   workspaceid              = module.log-analytics.lawid
   rgname                   = local.rgname
   location                 = var.location
+  rgid                     = azurerm_resource_group.this.id
   dcrname                  = local.dcrname
   windows_monitoring       = var.windows_monitoring
   windows_virtual_machines = module.virtual-machine.windows_virtual_machines

@@ -93,16 +93,12 @@ resource "azurerm_monitor_data_collection_rule_association" "linux" {
   depends_on              = [azurerm_monitor_data_collection_rule.linux]
 }
 
-data "azurerm_resource_group" "this" {
-  name = var.rgname
-}
-
 resource "azurerm_monitor_metric_alert" "cpu" {
   name                = "${var.alertrulename}-cpu"
   resource_group_name = var.rgname
   description         = "Alert when VM CPU usage exceeds 80% for 15 minutes."
 
-  scopes = [data.azurerm_resource_group.this.id]
+  scopes = [var.rgid]
   //scopes = concat(values(var.windows_virtual_machines).*.id,
   //values(var.linux_virtual_machines).*.id)
   severity    = 2
