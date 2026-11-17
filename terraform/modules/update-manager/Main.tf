@@ -1,5 +1,5 @@
 resource "azurerm_maintenance_configuration" "this" {
-  name                     = "dev-servers-maintenance"
+  name                     = "${var.tags["Env"]}-servers-maintenance"
   location                 = var.location
   resource_group_name      = var.rgname
   scope                    = "InGuestPatch"
@@ -23,7 +23,7 @@ resource "azurerm_maintenance_configuration" "this" {
     start_date_time = "2026-11-17 14:00"
     time_zone       = "Eastern Standard Time"
     recur_every     = "Week"
-    duration = "03:00"
+    duration        = "03:00"
 
   }
 }

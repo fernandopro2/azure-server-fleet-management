@@ -5,3 +5,7 @@ variable "location" {
 variable "rgname" {
   type = string
 }
+
+variable "tags" {
+
+}
