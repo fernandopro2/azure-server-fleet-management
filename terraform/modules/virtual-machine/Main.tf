@@ -49,6 +49,9 @@ resource "azurerm_windows_virtual_machine" "this" {
     type = "SystemAssigned"
   }
   patch_assessment_mode = "AutomaticByPlatform"
+  patch_mode            = "AutomaticByPlatform"
+  bypass_platform_safety_checks_on_user_schedule_enabled = "true"
+  tags                  = var.tags
 }
 
 resource "azurerm_linux_virtual_machine" "this" {
@@ -81,6 +84,9 @@ resource "azurerm_linux_virtual_machine" "this" {
   admin_username                  = "adminuser"
   admin_password                  = data.azurerm_key_vault_secret.linux-pass.value // configurar keyvault
   patch_assessment_mode           = "AutomaticByPlatform"
+  patch_mode                      = "AutomaticByPlatform"
+  bypass_platform_safety_checks_on_user_schedule_enabled = "true"
+  tags                            = var.tags
 }
 
 resource "azurerm_virtual_machine_extension" "entra-ssh" {

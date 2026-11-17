@@ -21,6 +21,10 @@ locals {
   dcrname       = "dcr-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
   alertrulename = "alert-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
 
+  tags = {
+    "Env" = upper(var.environment)
+  }
+
 
   subnetname = "snet-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
   //vmname     = "vm-${var.project}-${substr(var.vms.os, 0, 2)}-${var.environment}-${var.location}-${random_integer.this.result}"

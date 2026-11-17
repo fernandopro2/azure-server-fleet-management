@@ -20,6 +20,8 @@ module "virtual-machine" {
   location  = azurerm_resource_group.this.location
   subnet_id = module.networking.subnet_id
   vms       = local.vmconfig
+  tags      = local.tags
+
 }
 
 module "log-analytics" {
@@ -33,7 +35,7 @@ module "log-analytics" {
 module "azure-monitor" {
   source                   = "./modules/azure-monitor"
   workspaceid              = module.log-analytics.lawid
-  rgname                   = local.rgname
+  rgname                   = azurerm_resource_group.this.name
   location                 = var.location
   rgid                     = azurerm_resource_group.this.id
   dcrname                  = local.dcrname
@@ -42,4 +44,10 @@ module "azure-monitor" {
   linux_virtual_machines   = module.virtual-machine.linux_virtual_machines
   linux_monitoring         = var.linux_monitoring
   alertrulename            = local.alertrulename
+}
+
+module "update-manager" {
+  source   = "./modules/update-manager"
+  rgname   = azurerm_resource_group.this.name
+  location = var.location
 }
