@@ -23,11 +23,6 @@ variable "subnetaddrprefix" {
   default = ["10.10.0.0/24"]
 }
 
-variable "bastionname" {
-  type    = string
-  default = "bas-srvfleet-dev-canadacentral-001"
-}
-
 variable "bastionsubnetprefix" {
   type = string
 }

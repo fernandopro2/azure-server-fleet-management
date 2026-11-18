@@ -15,20 +15,23 @@ locals {
     "brazilsouth"   = "brs"
   }
   location      = local.regions_short[var.location]
-  rgname        = "rg-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
-  vnetname      = "vnet-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
-  lawname       = "law-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
-  dcrname       = "dcr-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
-  alertrulename = "alert-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
+  suffix        = "${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
+  rgname        = "rg-${local.suffix}"
+  vnetname      = "vnet-${local.suffix}"
+  lawname       = "law-${local.suffix}"
+  dcrname       = "dcr-${local.suffix}"
+  alertrulename = "alert-${local.suffix}"
+  bastionname   = "bas-${local.suffix}"
+
 
   tags = {
     "Env" = upper(var.environment)
   }
 
 
-  subnetname = "snet-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
+  subnetname = "snet-${local.suffix}"
   //vmname     = "vm-${var.project}-${substr(var.vms.os, 0, 2)}-${var.environment}-${var.location}-${random_integer.this.result}"
-  nsgname = "nsg-${var.project}-${var.environment}-${local.location}-${random_integer.this.result}"
+  nsgname = "nsg-${local.suffix}"
   vmconfig = {
     for name, vm in var.vms :
     name => {

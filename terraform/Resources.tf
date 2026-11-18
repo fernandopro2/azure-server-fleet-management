@@ -17,6 +17,7 @@ module "networking" {
 module "virtual-machine" {
   source    = "./modules/virtual-machine"
   rgname    = azurerm_resource_group.this.name
+  rg_id     = azurerm_resource_group.this.id
   location  = azurerm_resource_group.this.location
   subnet_id = module.networking.subnet_id
   vms       = local.vmconfig
@@ -56,7 +57,7 @@ module "update-manager" {
 
 module "bastion" {
   source              = "./modules/bastion"
-  bastionname         = var.bastionname
+  bastionname         = local.bastionname
   bastionsubnetprefix = var.bastionsubnetprefix
   vnet_name           = module.networking.vnet_name
   rgname              = azurerm_resource_group.this.name

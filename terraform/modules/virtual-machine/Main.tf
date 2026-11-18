@@ -142,3 +142,18 @@ resource "azurerm_virtual_machine_extension" "ama-linux" {
   auto_upgrade_minor_version = true
 
 }
+
+data "azuread_group" "linux_admins" {
+  display_name = "Linux Admins"
+}
+
+data "azuread_group" "windows_admins" {
+  display_name = "Windows Admins"
+}
+
+resource "azurerm_role_assignment" "vms_rbac" {
+  scope                = var.rg_id
+  for_each             = toset([data.azuread_group.linux_admins.object_id, data.azuread_group.windows_admins.object_id])
+  role_definition_name = "Virtual Machine Administrator Login"
+  principal_id         = each.value
+}
