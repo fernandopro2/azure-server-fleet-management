@@ -1,182 +1,212 @@
 # Azure Server Fleet Management & Observability
 
-## 1. Architecture Overview
+## 1. Purpose
 
-The Azure Server Fleet Management & Observability project provides a centralized solution for deploying, managing, monitoring, and maintaining Windows and Linux virtual machines hosted in Microsoft Azure.
+Azure Server Fleet Management & Observability is a Terraform-based project for deploying and operating a small Windows and Linux virtual machine fleet in Microsoft Azure. The development environment combines secure administrative connectivity, centralized monitoring, alerting, and scheduled operating system patch management.
 
-The infrastructure is provisioned and managed using Terraform. Azure native services are used for secure connectivity, monitoring, logging, alerting, and update management.
-
-The initial implementation targets a development environment in Canada Central.
+The documented implementation is a development environment in **Canada Central**. It is intentionally cost-conscious and does not implement high availability or disaster recovery.
 
 ## 2. Architecture Principles
 
-The solution follows the Microsoft Azure Well-Architected Framework principles:
+The project uses the Microsoft Azure Well-Architected Framework as its architectural reference:
 
-- **Reliability:** Deploy a functional infrastructure baseline with clearly defined operational boundaries.
-- **Security:** Apply least privilege, secure administrative access, and avoid direct public exposure of virtual machines.
-- **Cost Optimization:** Use cost-conscious Azure SKUs suitable for a development environment.
-- **Operational Excellence:** Automate infrastructure provisioning and maintain infrastructure as code.
-- **Performance Efficiency:** Collect infrastructure metrics and monitor resource utilization.
+- **Reliability:** provide operational visibility and scheduled maintenance for the virtual machines. High availability and disaster recovery are outside the current development scope.
+- **Security:** avoid public IP addresses on workload VMs, provide administrative access through Azure Bastion, use Key Vault as the source of local administrator credentials, and apply network restrictions.
+- **Cost Optimization:** use development-sized virtual machines, a 30-day Log Analytics retention period, and Azure-native management services.
+- **Operational Excellence:** provision infrastructure through reusable Terraform modules and keep implementation decisions in version control.
+- **Performance Efficiency:** collect operating-system performance counters and use Azure Monitor alerts to identify selected operational conditions.
 
-High availability and disaster recovery are outside the scope of the initial development environment.
+These principles guide the implementation; they do not imply that every Well-Architected capability has been implemented.
 
-## 3. Azure Infrastructure Components
-
-### 3.1 Networking
-
-The networking layer provides secure connectivity between infrastructure components.
-
-Components:
-
-- Azure Virtual Network
-- Workload subnet
-- Azure Bastion subnet
-- Network Security Group
-
-Virtual machines will not have public IP addresses.
-
-Administrative access will be provided through Azure Bastion.
-
-### 3.2 Virtual Machines
-
-The initial fleet consists of two virtual machines:
-
-| Resource | Operating System | VM Size |
-|---|---|---|
-| vm-srvfleet-dev-001 | Windows Server 2022 Datacenter | Standard_B2s |
-| vm-srvfleet-dev-002 | Ubuntu Server 24.04 LTS | Standard_B2s |
-
-Both virtual machines will use managed disks.
-
-The Windows virtual machine will use a protected local administrator password.
-
-The Linux virtual machine will use SSH key authentication.
-
-### 3.3 Azure Bastion
-
-Azure Bastion provides secure administrative connectivity to the virtual machines.
-
-The service will be deployed using the Basic SKU.
-
-RDP and SSH connectivity will be provided through Azure Bastion without exposing the virtual machines directly to the Internet.
-
-### 3.4 Monitoring and Observability
-
-Azure Monitor and Log Analytics provide centralized infrastructure monitoring.
-
-Components:
-
-- Log Analytics Workspace
-- Azure Monitor Agent (AMA)
-- Data Collection Rules (DCR)
-- Azure Monitor Alerts
-
-The monitoring solution will collect:
-
-- CPU utilization
-- Memory utilization
-- Disk utilization
-- VM heartbeat
-- Windows System and Application event logs
-- Linux syslog events
-
-The initial Log Analytics retention period will be 30 days.
-
-### 3.5 Update Management
-
-Azure Update Manager will be used to assess and manage operating system updates.
-
-The initial configuration includes:
-
-- Daily update assessment
-- Weekly maintenance schedule
-- Saturday maintenance window at 02:00 Quebec local time
-- Two-hour maintenance duration
-- Reboot allowed
-
-## 4. Logical Architecture
-
-The solution is organized into the following logical layers:
-
-1. **Infrastructure Layer**
-   - Resource Group
-   - Virtual Network
-   - Subnets
-   - Network Security Group
-
-2. **Compute Layer**
-   - Windows Virtual Machine
-   - Linux Virtual Machine
-   - Managed Disks
-
-3. **Administrative Access Layer**
-   - Azure Bastion
-   - Secure RDP and SSH access
-
-4. **Monitoring Layer**
-   - Azure Monitor Agent
-   - Data Collection Rules
-   - Log Analytics Workspace
-   - Alert Rules
-
-5. **Operations Layer**
-   - Azure Update Manager
-   - Update assessment
-   - Scheduled maintenance
-
-## 5. Terraform Architecture
-
-Terraform is responsible for provisioning and managing the Azure infrastructure.
-
-The repository will use a modular structure:
-
-- `terraform/environments/dev/`
-- `terraform/modules/networking/`
-- `terraform/modules/virtual-machine/`
-- `terraform/modules/bastion/`
-- `terraform/modules/log-analytics/`
-- `terraform/modules/azure-monitor/`
-- `terraform/modules/update-manager/`
-
-The development environment will consume reusable Terraform modules.
-
-Infrastructure changes will be version-controlled through Git.
-
-Terraform state and sensitive configuration files must not be committed to the repository.
-
-## 6. Security Considerations
-
-The initial architecture follows these security principles:
-
-- No public IP addresses assigned to virtual machines.
-- Administrative access through Azure Bastion.
-- SSH key authentication for Linux.
-- Protected administrator credentials for Windows.
-- Network Security Group rules based on least privilege.
-- Secrets must not be stored in Git.
-- Terraform state must be protected.
-- Azure resources must use appropriate access controls.
-
-## 7. Initial Environment
+## 3. Environment
 
 | Property | Value |
 |---|---|
-| Environment | dev |
-| Azure Region | Canada Central |
-| Resource Group | rg-srvfleet-dev-canadacentral-001 |
-| Virtual Network | vnet-srvfleet-canadacentral-001 |
-| Log Analytics Workspace | law-srvfleet-dev-canadacentral-001 |
+| Environment | `dev` |
+| Azure region | `canadacentral` (Canada Central) |
+| Project identifier | `srvfleet` |
+| Virtual network address space | `10.10.0.0/16` |
+| Workload subnet | `10.10.0.0/24` |
+| Azure Bastion subnet | `10.10.1.0/26` |
+| Log Analytics retention | 30 days |
 | Infrastructure as Code | Terraform |
+| AzureRM provider constraint | `~> 5.0` |
+| Random provider constraint | `~> 3.0` |
 
-## 8. Future Evolution
+Resource names are generated using Terraform locals and random suffixes. The exact resource names therefore depend on the generated values for a deployment and should not be treated as fixed identifiers in this document.
 
-The architecture may evolve to include:
+## 4. Azure Infrastructure Components
 
-- Additional virtual machines
-- Automated deployment pipelines
-- Advanced monitoring and alerting
-- Cost analysis and optimization
-- Infrastructure compliance validation
-- Additional Azure management capabilities
+### 4.1 Resource organization and naming
 
-Any architectural evolution must be documented and validated against the Azure Well-Architected Framework.
+The root Terraform configuration creates a resource group. Naming locals use the project, environment, a short region code (`cac` for Canada Central), and a random numeric suffix. VM-related names also include a random identifier.
+
+The environment tag is created as `Env = DEV`. This tag is also used by the Update Manager dynamic scope.
+
+### 4.2 Networking
+
+The networking module provisions:
+
+- Azure Virtual Network with address space `10.10.0.0/16`.
+- Workload subnet `10.10.0.0/24`.
+- Network Security Group associated with the workload subnet.
+- Inbound RDP (`3389/TCP`) and SSH (`22/TCP`) rules whose source is the Bastion subnet prefix `10.10.1.0/26`.
+
+The dedicated `AzureBastionSubnet` is created by the Bastion module. See [NETWORK_DESIGN.md](NETWORK_DESIGN.md).
+
+### 4.3 Compute
+
+The initial fleet contains two VMs:
+
+| Workload | Operating system | Size | OS disk storage type |
+|---|---|---|---|
+| Windows | Windows Server 2022 Datacenter | `Standard_B2s` | `Standard_LRS` |
+| Linux | Ubuntu Server 22.04 LTS | `Standard_B2s` | `Standard_LRS` |
+
+Both VMs use private network interfaces and System Assigned Managed Identities. The submitted Terraform configuration does not assign public IP addresses to the VMs.
+
+The VM module retrieves the local administrator passwords from Azure Key Vault data sources. The current access procedure uses local credentials. Microsoft Entra ID login extensions are also deployed on both operating systems, preserving an option for a future change in access method; their presence does not mean that Entra ID is the current interactive authentication method.
+
+### 4.4 Azure Bastion
+
+Azure Bastion is deployed using the **Basic** SKU. Its module creates a dedicated public IP address and the `AzureBastionSubnet`. Administrators connect to the private VMs through Bastion rather than assigning public IP addresses directly to the VMs.
+
+The Bastion module receives the existing VNet name from the networking module through its `vnet_name` output.
+
+### 4.5 Monitoring and observability
+
+Azure Monitor and Log Analytics provide centralized monitoring.
+
+Implemented components:
+
+- Log Analytics Workspace with 30-day retention.
+- Azure Monitor Agent (AMA) extensions on Windows and Linux.
+- Separate Windows and Linux Data Collection Rules (DCRs).
+- DCR associations for the VMs.
+- CPU and Heartbeat alerting.
+
+See [MONITORING_DESIGN.md](MONITORING_DESIGN.md).
+
+### 4.6 Update management
+
+Azure Update Manager manages operating-system update assessment and scheduled patch installation.
+
+The current configuration uses:
+
+- Platform-managed periodic assessment.
+- Customer-managed patch schedules through `InGuestPatch`.
+- A weekly maintenance window on Tuesday at 14:00 Quebec local time.
+- A three-hour duration.
+- Reboot when required.
+- A dynamic scope that selects virtual machines with the tag `Env = DEV`.
+
+The maintenance window values are supplied through the Terraform maintenance configuration variable. See [UPDATE_MANAGEMENT.md](UPDATE_MANAGEMENT.md).
+
+## 5. Logical Architecture
+
+The solution is organized into the following layers:
+
+1. **Foundation**
+   - Resource group
+   - Resource naming and tags
+   - Terraform environment configuration
+
+2. **Network and access**
+   - Virtual network and workload subnet
+   - Network Security Group
+   - Azure Bastion and its public IP
+
+3. **Compute**
+   - Windows Server 2022 VM
+   - Ubuntu Server 22.04 VM
+   - Managed OS disks
+   - System Assigned Managed Identities
+   - VM extensions for AMA and Entra ID login
+
+4. **Monitoring**
+   - Log Analytics Workspace
+   - Azure Monitor Agent
+   - Windows and Linux DCRs
+   - DCR associations
+   - CPU and Heartbeat alerts
+
+5. **Operations**
+   - Azure Update Manager
+   - Periodic update assessment
+   - Maintenance Configuration
+   - Dynamic Scope assignment
+
+## 6. Terraform Architecture
+
+The root environment is located at `terraform/environments/dev/` and consumes reusable modules under `terraform/modules/`.
+
+The modules represented in the supplied project files are:
+
+- `networking`
+- `virtual-machine`
+- `bastion`
+- `log-analytics`
+- `azure-monitor`
+- `update-manager`
+
+Environment-specific values, including VM sizing, monitoring collection settings, and maintenance-window settings, are supplied through Terraform variables and the development variable file.
+
+The submitted provider configuration declares:
+
+- `hashicorp/azurerm` with constraint `~> 5.0`
+- `hashicorp/random` with constraint `~> 3.0`
+
+Terraform state, backend configuration, CI/CD configuration, and repository branch protection are not established by the files reviewed for this document and are not described as implemented here.
+
+## 7. Security Boundaries and Current Limitations
+
+Implemented controls evidenced by the submitted Terraform:
+
+- No public IP is assigned to either workload VM.
+- Administrative connectivity is provided through Azure Bastion.
+- The workload subnet NSG includes inbound RDP and SSH rules sourced from the Bastion subnet.
+- Local administrator passwords are read from Azure Key Vault.
+- VM System Assigned Managed Identities are enabled.
+- Azure Monitor Agent and Entra ID login extensions are provisioned.
+
+Current operational detail:
+
+- Local credentials are used for VM access at present.
+- Entra ID login extensions are deployed, but Entra ID authentication is not the current access method.
+- Azure Policy is not implemented. It remains a planned governance enhancement.
+- Alert notification delivery (for example, email or SMS through an Action Group) is not part of the current implementation.
+
+The submitted code should be reviewed separately for secret-reference hygiene and least-privilege access to Key Vault and Azure resources. This document does not claim that those access permissions have been independently audited.
+
+## 8. Implementation and Validation Status
+
+The following status reflects the implementation and validation information provided for this documentation update:
+
+| Capability | Status |
+|---|---|
+| Resource group, VNet, workload subnet and NSG | Deployed |
+| Windows and Linux VMs | Deployed |
+| Azure Bastion Basic | Deployed and tested |
+| Log Analytics Workspace | Deployed |
+| AMA and DCR configuration | Deployed and validated |
+| CPU alert | Deployed and functionally tested |
+| Heartbeat alert | Deployed and functionally tested, including Fired and Resolved transitions |
+| Periodic update assessment | Enabled and working on both VMs |
+| Maintenance Configuration and dynamic scope | Deployed |
+| Patch installation | Executed and tested |
+| Azure Policy | Planned; not implemented |
+| Alert notification delivery | Not implemented |
+| CI/CD automation | Not confirmed by the reviewed files |
+
+## 9. Future Evolution
+
+Potential future work, not represented as implemented:
+
+- Azure Policy assignments for audit and governance.
+- Alert notification delivery using Action Groups.
+- Terraform CI/CD and automated quality/security checks.
+- Expanded security-event collection and security monitoring.
+- Additional workloads and environments.
+- Operational runbooks and formal acceptance criteria.
+
+Architectural changes should be recorded in [DECISIONS.md](DECISIONS.md) and reflected in the relevant design documents.

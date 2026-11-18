@@ -2,226 +2,163 @@
 
 ## 1. Purpose
 
-This document defines the repository structure for the Azure Server Fleet Management & Observability project.
+This document describes the repository organization for Azure Server Fleet Management & Observability based on the Terraform files reviewed for the development environment.
 
-The repository is organized to support maintainability, modularity, infrastructure as code, documentation, and Git-based collaboration.
-
-The structure separates environment-specific configuration from reusable Terraform modules.
+The structure separates environment-specific configuration from reusable infrastructure modules and keeps architecture documentation alongside the implementation.
 
 ## 2. Repository Overview
 
-The repository follows the structure below:
+The documented project structure is:
 
 ```text
 azure-server-fleet-management/
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── NETWORK_DESIGN.md
-│   ├── MONITORING_DESIGN.md
-│   ├── UPDATE_MANAGEMENT.md
-│   ├── DECISIONS.md
-│   └── REPOSITORY_STRUCTURE.md
-│
-├── terraform/
-│   ├── environments/
-│   │   └── dev/
-│   │
-│   └── modules/
-│       ├── networking/
-│       ├── virtual-machine/
-│       ├── bastion/
-│       ├── log-analytics/
-│       ├── azure-monitor/
-│       └── update-manager/
-│
-├── .gitignore
-├── README.md
-└── PROJECT_CONTEXT.md
+|
++-- docs/
+|   +-- ARCHITECTURE.md
+|   +-- NETWORK_DESIGN.md
+|   +-- MONITORING_DESIGN.md
+|   +-- UPDATE_MANAGEMENT.md
+|   +-- DECISIONS.md
+|   +-- REPOSITORY_STRUCTURE.md
+|
++-- terraform/
+|   +-- environments/
+|   |   +-- dev/
+|   |       +-- Providers.tf
+|   |       +-- Variables.tf
+|   |       +-- Locals.tf
+|   |       +-- Resources.tf
+|   |       +-- Outputs.tf
+|   |       +-- dev.tfvars
+|   |
+|   +-- modules/
+|       +-- networking/
+|       +-- virtual-machine/
+|       +-- bastion/
+|       +-- log-analytics/
+|       +-- azure-monitor/
+|       +-- update-manager/
+|
++-- .gitignore
++-- README.md
++-- PROJECT_CONTEXT.md
 ```
+
+The exact file names and capitalization should follow the repository as committed. The tree above reflects the organization represented by the supplied files; it does not assert that every listed root-level documentation or support file was independently inspected in this update.
 
 ## 3. Documentation Directory
 
-The `docs/` directory contains the project's technical and architectural documentation.
-
 | File | Responsibility |
 |---|---|
-| ARCHITECTURE.md | Describes the overall Azure architecture |
-| NETWORK_DESIGN.md | Documents network topology and security |
-| MONITORING_DESIGN.md | Defines monitoring and observability |
-| UPDATE_MANAGEMENT.md | Defines operating system update management |
-| DECISIONS.md | Records architectural decisions |
-| REPOSITORY_STRUCTURE.md | Documents repository organization |
+| `ARCHITECTURE.md` | Overall solution architecture, components, status, and boundaries |
+| `NETWORK_DESIGN.md` | VNet, subnets, NSG rules, and Bastion connectivity |
+| `MONITORING_DESIGN.md` | Log Analytics, AMA, DCRs, alerts, and validation |
+| `UPDATE_MANAGEMENT.md` | Assessment, maintenance schedule, patch classifications, and validation |
+| `DECISIONS.md` | Architecture Decision Records |
+| `REPOSITORY_STRUCTURE.md` | Repository and module organization |
 
-Documentation must be maintained as the architecture evolves.
+Documentation should be updated alongside changes to the infrastructure and architectural decisions.
 
-## 4. Terraform Directory
+## 4. Terraform Environment
 
-The `terraform/` directory contains all Terraform configuration files.
-
-It is divided into two main areas:
-
-- `environments/`: Environment-specific Terraform configurations.
-- `modules/`: Reusable Terraform modules.
-
-## 5. Environment Configuration
-
-### 5.1 Development Environment
+### 4.1 Development environment
 
 Location:
 
 `terraform/environments/dev/`
 
-This directory contains the Terraform configuration responsible for deploying the development environment.
+The development root configuration is responsible for:
 
-The environment configuration will:
+- Declaring Terraform and provider requirements.
+- Configuring the AzureRM and Random providers.
+- Declaring environment variables.
+- Defining naming locals and environment tags.
+- Creating the resource group.
+- Calling reusable modules.
+- Exposing selected VM outputs.
 
-- Define the Terraform provider configuration.
-- Configure the Terraform backend.
-- Declare required Terraform and provider versions.
-- Consume reusable Terraform modules.
-- Define environment-specific variables.
-- Expose relevant outputs.
+Environment-specific values include VM definitions, monitoring settings, Log Analytics retention, network prefixes, and maintenance-window settings.
 
-The development environment must not contain duplicated infrastructure logic that belongs in reusable modules.
+The submitted provider configuration specifies `hashicorp/azurerm` `~> 5.0` and `hashicorp/random` `~> 3.0`.
 
-## 6. Terraform Modules
+## 5. Terraform Modules
 
-The `terraform/modules/` directory contains reusable infrastructure modules.
+The reviewed module set is:
 
-### 6.1 Networking
+| Module | Responsibility |
+|---|---|
+| `networking/` | VNet, workload subnet, NSG, and subnet/NSG association |
+| `virtual-machine/` | Network interfaces, Windows and Linux VMs, VM extensions, and VM outputs |
+| `bastion/` | Bastion public IP, `AzureBastionSubnet`, and Azure Bastion host |
+| `log-analytics/` | Log Analytics Workspace and retention |
+| `azure-monitor/` | Windows and Linux DCRs, DCR associations, CPU alert, and Heartbeat alert resources |
+| `update-manager/` | Maintenance Configuration and dynamic-scope assignment |
 
-Location:
+### 5.1 Module interfaces
 
-`terraform/modules/networking/`
+The development root passes resource IDs, names, and environment-specific settings between modules.
 
-Responsibilities:
+Examples include:
 
-- Create the Azure Virtual Network.
-- Create workload and Azure Bastion subnets.
-- Create the Network Security Group.
-- Associate the NSG with the workload subnet.
+- The networking module exposes the workload subnet ID and VNet name.
+- The virtual-machine module exposes Windows and Linux VM objects for use by the monitoring module.
+- The Log Analytics module exposes the workspace ID for monitoring resources.
+- The root passes the VNet name from networking to the Bastion module.
+- The root passes the maintenance configuration object to the Update Manager module.
 
-### 6.2 Virtual Machine
+Module outputs and input variables must remain synchronized when modules are changed.
 
-Location:
+## 6. Git Workflow
 
-`terraform/modules/virtual-machine/`
-
-Responsibilities:
-
-- Provision Azure virtual machines.
-- Configure operating system-specific settings.
-- Create and associate managed disks.
-- Configure network interfaces.
-- Support Windows Server and Ubuntu deployments.
-
-### 6.3 Bastion
-
-Location:
-
-`terraform/modules/bastion/`
-
-Responsibilities:
-
-- Provision Azure Bastion.
-- Configure the required public IP address.
-- Integrate Azure Bastion with the dedicated subnet.
-
-### 6.4 Log Analytics
-
-Location:
-
-`terraform/modules/log-analytics/`
-
-Responsibilities:
-
-- Create the Log Analytics Workspace.
-- Configure workspace retention.
-- Expose workspace information required by other modules.
-
-### 6.5 Azure Monitor
-
-Location:
-
-`terraform/modules/azure-monitor/`
-
-Responsibilities:
-
-- Configure Data Collection Rules.
-- Configure monitoring resources.
-- Define Azure Monitor alert rules.
-- Integrate monitoring with the Log Analytics Workspace.
-
-### 6.6 Update Manager
-
-Location:
-
-`terraform/modules/update-manager/`
-
-Responsibilities:
-
-- Configure update management resources.
-- Define maintenance schedules.
-- Configure update assessment.
-- Support Windows and Linux virtual machines.
-
-## 7. Git and Version Control
-
-The repository uses the following branches:
+The project workflow described by the user uses:
 
 | Branch | Purpose |
 |---|---|
-| main | Stable and validated code |
-| develop | Development integration branch |
-| feature/* | Isolated implementation work |
+| `main` | Stable branch |
+| `develop` | Integration branch for validated development work |
+| `feature/*` | Isolated implementation work |
 
-All infrastructure code and documentation must be version-controlled.
+The user has stated that the completed infrastructure work is present in the GitHub `develop` branch. The repository itself was not accessed during this documentation update; the review was based on user-supplied files and confirmations.
 
-Commit messages must be descriptive and written in English.
+Commit messages should be descriptive and written in English. Examples:
 
-Examples:
+- `docs: update architecture documentation`
+- `feat: implement monitoring module`
+- `fix: correct bastion module interface`
+- `chore: update terraform configuration`
 
-- `docs: add initial architecture documentation`
-- `feat: implement networking module`
-- `fix: correct subnet address configuration`
-- `chore: update terraform provider version`
+## 7. Repository Hygiene and Security
 
-## 8. Security and Repository Hygiene
-
-The repository must not contain:
+The repository should not contain:
 
 - Terraform state files.
-- Sensitive Terraform variable files.
-- Azure client secrets.
-- Administrator passwords.
+- Sensitive variable files containing secrets.
+- Client secrets or administrator passwords.
 - Private SSH keys.
-- Terraform plan files containing sensitive information.
+- Plan files containing sensitive values.
 
-The `.gitignore` file must prevent sensitive and local files from being committed.
+The reviewed VM module reads local administrator passwords from Azure Key Vault data sources. The actual secret values should not be committed to the repository.
 
-Terraform state must be stored using an appropriately secured backend.
+The submitted files do not establish the configured Terraform backend or CI/CD pipeline. Those capabilities should only be documented as implemented after their configuration is reviewed.
 
-## 9. Engineering Principles
+## 8. Engineering Principles
 
-The repository must follow these principles:
+- Keep environment-specific configuration separate from reusable modules.
+- Maintain clear module responsibilities and interfaces.
+- Validate Terraform changes before deployment.
+- Keep code and documentation aligned.
+- Consider security and cost throughout implementation.
+- Record material architecture decisions in `DECISIONS.md`.
+- Do not treat planned work as completed implementation.
 
-- Infrastructure must be managed using Terraform.
-- Modules must have clearly defined responsibilities.
-- Environment-specific configuration must remain separate from reusable modules.
-- Documentation must be maintained alongside implementation.
-- Infrastructure changes must be validated before deployment.
-- Security and cost optimization must be considered throughout implementation.
-- Architectural changes must be documented in DECISIONS.md.
+## 9. Future Evolution
 
-## 10. Future Evolution
+Potential repository improvements include:
 
-The repository may evolve to include:
+- Additional environment roots.
+- Terraform CI/CD workflows.
+- Formatting, validation, linting, and security scanning automation.
+- Automated testing and drift review.
+- Operational runbooks and acceptance documentation.
 
-- Additional Azure environments.
-- Automated CI/CD workflows.
-- Terraform testing.
-- Security scanning.
-- Additional infrastructure modules.
-
-Any structural change must preserve the separation between environment configuration, reusable modules, and documentation.
+These items remain future work unless separately implemented and validated.

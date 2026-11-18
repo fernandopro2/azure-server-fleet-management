@@ -2,106 +2,139 @@
 
 ## 1. Update Management Overview
 
-Azure Update Manager will be used to assess, manage, and monitor operating system updates for the Azure Server Fleet Management & Observability development environment.
+Azure Update Manager is used to assess and manage operating-system updates for the Windows Server 2022 and Ubuntu Server 22.04 virtual machines in the development environment.
 
-The solution covers the Windows Server and Ubuntu Server virtual machines.
+The implementation separates periodic update assessment from the customer-managed patch installation schedule.
 
-The initial configuration establishes a recurring assessment schedule and a weekly maintenance window.
+## 2. Selected Management Approach
 
-## 2. Azure Update Manager
+The project uses Azure Update Manager with a customer-managed maintenance schedule (`InGuestPatch`).
 
-Azure Update Manager provides centralized update management capabilities for Azure virtual machines.
+The VM resources are configured with:
 
-The service will be used to:
+| VM setting | Value |
+|---|---|
+| `patch_assessment_mode` | `AutomaticByPlatform` |
+| `patch_mode` | `AutomaticByPlatform` |
+| `bypass_platform_safety_checks_on_user_schedule_enabled` | `true` |
 
-- Assess available operating system updates.
-- Identify missing updates.
-- Schedule maintenance activities.
-- Monitor update installation status.
-- Manage operating system patching activities.
+The Maintenance Configuration uses:
+
+| Setting | Value |
+|---|---|
+| `scope` | `InGuestPatch` |
+| `in_guest_user_patch_mode` | `User` |
+| Reboot behavior | `IfRequired` |
+
+This is the selected Azure Update Manager scheduled-patching approach. It should not be described as the separate Automatic VM Guest Patching approach.
 
 ## 3. Managed Virtual Machines
 
-The initial update management scope includes the following virtual machines:
-
-| Virtual Machine | Operating System |
+| Workload | Operating system |
 |---|---|
-| vm-srvfleet-dev-001 | Windows Server 2022 Datacenter |
-| vm-srvfleet-dev-002 | Ubuntu Server 24.04 LTS |
+| Windows | Windows Server 2022 Datacenter |
+| Linux | Ubuntu Server 22.04 LTS |
 
-Both virtual machines will be included in the update assessment and maintenance configuration.
+Both VMs are included in the dynamic maintenance scope when they carry the matching environment tag.
 
 ## 4. Update Assessment
 
-Update assessment will be performed daily.
+Periodic assessment is enabled through `patch_assessment_mode = "AutomaticByPlatform"` on both VM resources.
 
-The assessment process identifies applicable updates and provides visibility into the update compliance status of the virtual machines.
+The assessment configuration is separate from the maintenance installation window. The periodic assessment setting does not, by itself, define the customer-managed installation schedule.
 
-The assessment schedule must be compatible with the supported capabilities of Azure Update Manager.
+Assessment behavior has been confirmed as working on both VMs.
 
-## 5. Maintenance Schedule
+## 5. Maintenance Configuration
 
-The initial maintenance configuration is defined as follows:
+The Terraform Update Manager module creates an `azurerm_maintenance_configuration` resource with `scope = "InGuestPatch"` and `in_guest_user_patch_mode = "User"`.
+
+The current maintenance settings are:
 
 | Property | Value |
 |---|---|
 | Frequency | Weekly |
-| Day | Saturday |
-| Start Time | 02:00 |
-| Time Zone | Quebec local time |
-| Duration | 2 hours |
-| Reboot Setting | Reboot allowed |
+| Day | Tuesday |
+| Start time | 14:00 |
+| Time zone | `Eastern Standard Time` (Quebec local time) |
+| Duration | 3 hours |
+| Reboot behavior | `IfRequired` |
 
-The maintenance window is intended to minimize operational disruption in the development environment.
+The schedule is supplied through the Terraform `maintenance_configuration` variable object rather than being hard-coded into the module. The current development variable values specify a start date/time of `2026-11-17 14:00`, the `Eastern Standard Time` time-zone identifier, weekly recurrence, and a duration of `03:00`.
 
-## 6. Reboot Policy
+When changing the schedule, update the external environment variable values and validate the resulting Terraform plan.
 
-The initial maintenance configuration allows virtual machines to reboot when required by the update installation process.
+## 6. Patch Classifications
 
-The reboot behavior must be validated during implementation to ensure compatibility with the selected Azure Update Manager configuration.
+The Maintenance Configuration defines separate update classifications for each operating system.
 
-## 7. Operational Considerations
+### 6.1 Windows
 
-The development environment does not require high availability.
+The configured classifications are:
 
-Temporary service interruptions during maintenance are acceptable.
+- Critical
+- Security
+- UpdateRollup
+- Updates
 
-Before introducing update management into production environments, additional requirements must be defined, including:
+### 6.2 Linux
 
-- Maintenance approval procedures.
-- Workload availability requirements.
-- Update testing procedures.
-- Rollback and recovery strategy.
-- Maintenance notifications.
+The configured classifications are:
 
-## 8. Security Considerations
+- Critical
+- Security
 
-Update management contributes to the security posture of the infrastructure by helping maintain operating systems with applicable updates.
+The classifications are supplied through the `maintenance_configuration` variable object.
 
-The implementation must:
+## 7. Maintenance Assignment
 
-- Use Azure native update management capabilities.
-- Apply updates according to the defined maintenance schedule.
-- Monitor update assessment and installation status.
-- Maintain appropriate Azure access controls.
-- Avoid storing administrative credentials in Terraform configuration or Git.
+The implementation uses `azurerm_maintenance_assignment_dynamic_scope`.
 
-## 9. Terraform Implementation
+The dynamic scope filters for:
 
-The infrastructure supporting update management will be documented and managed through the planned Terraform module:
+- Resource type: `Microsoft.Compute/virtualMachines`
+- Tag name: `Env`
+- Tag value: `DEV`
+
+The root Terraform configuration assigns the `Env = DEV` tag to the VM resources. Consequently, the dynamic scope selects matching development VMs without creating a separate static assignment for each VM.
+
+The tag is therefore part of the operational maintenance boundary. New VMs carrying the same tag may be included in this maintenance scope.
+
+## 8. Reboot Behavior
+
+The Maintenance Configuration sets `reboot = "IfRequired"`. A VM may be restarted when the update installation requires it.
+
+The development environment does not implement high availability, so temporary interruptions during patching are accepted.
+
+## 9. Validation
+
+The user confirmed that the following work was completed:
+
+- Periodic assessment enabled and working.
+- Maintenance Configuration created.
+- Dynamic-scope assignment created.
+- Patch installation executed and tested.
+
+This records the reported functional validation. Detailed per-update deployment history, exact KB/package identifiers, and individual VM installation results were not included in the supplied Terraform files and are not reproduced here.
+
+## 10. Security and Operational Considerations
+
+- Update assessment and installation are managed through Azure-native capabilities.
+- The dynamic scope relies on consistent `Env = DEV` tagging.
+- The maintenance schedule is externalized through Terraform variables.
+- Reboot is allowed when required.
+- Azure access to manage maintenance resources should follow least privilege.
+- Azure Policy is not currently implemented. It remains a planned governance enhancement and may later be used to audit configuration compliance or drift without duplicating Terraform provisioning responsibilities.
+
+## 11. Terraform Implementation
+
+The implementation is located in:
 
 `terraform/modules/update-manager/`
 
-The implementation must validate the supported Azure Update Manager capabilities and scheduling requirements.
+The module creates:
 
-## 10. Validation Requirements
+- `azurerm_maintenance_configuration`
+- `azurerm_maintenance_assignment_dynamic_scope`
 
-The update management implementation must be validated against the following requirements:
-
-- Both virtual machines are included in the update management scope.
-- Daily update assessment is configured.
-- Weekly maintenance is scheduled for Saturdays at 02:00 Quebec local time.
-- The maintenance duration is two hours.
-- Reboot is allowed.
-- Update assessment and installation status can be monitored.
-- The configuration is compatible with Windows Server 2022 and Ubuntu Server 24.04 LTS.
+The VM module configures the VM patch assessment and patch orchestration settings. The root environment passes the maintenance settings to the Update Manager module.
