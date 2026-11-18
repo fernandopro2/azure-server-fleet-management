@@ -81,14 +81,14 @@ variable "linux_monitoring" {
 
 variable "maintenance_configuration" {
   type = object({
-    reboot = string
+    reboot                             = string
     windows_classifications_to_include = list(string)
-    linux_classifications_to_include = list(string)
+    linux_classifications_to_include   = list(string)
     window = object({
       start_date_time = string
-      time_zone = string
-      recur_every = string
-      duration = string
+      time_zone       = string
+      recur_every     = string
+      duration        = string
     })
   })
 }

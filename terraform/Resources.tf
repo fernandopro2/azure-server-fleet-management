@@ -53,3 +53,12 @@ module "update-manager" {
   tags                      = local.tags
   maintenance_configuration = var.maintenance_configuration
 }
+
+module "bastion" {
+  source              = "./modules/bastion"
+  bastionname         = var.bastionname
+  bastionsubnetprefix = var.bastionsubnetprefix
+  vnet_name           = module.networking.vnet_name
+  rgname              = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
+}
