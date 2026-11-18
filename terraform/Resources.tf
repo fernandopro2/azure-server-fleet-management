@@ -47,8 +47,9 @@ module "azure-monitor" {
 }
 
 module "update-manager" {
-  source   = "./modules/update-manager"
-  rgname   = azurerm_resource_group.this.name
-  location = var.location
-  tags     = local.tags
+  source                    = "./modules/update-manager"
+  rgname                    = azurerm_resource_group.this.name
+  location                  = var.location
+  tags                      = local.tags
+  maintenance_configuration = var.maintenance_configuration
 }

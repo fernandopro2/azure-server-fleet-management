@@ -1,5 +1,5 @@
 resource "azurerm_maintenance_configuration" "this" {
-  name                     = "${var.tags["Env"]}-servers-maintenance"
+  name                     = "${lower(var.tags["Env"])}-servers-maintenance"
   location                 = var.location
   resource_group_name      = var.rgname
   scope                    = "InGuestPatch"
@@ -7,29 +7,23 @@ resource "azurerm_maintenance_configuration" "this" {
   install_patches {
     reboot = "IfRequired"
     windows {
-      classifications_to_include = [
-        "Critical",
-        "Security",
-        "UpdateRollup",
-        "Updates"
-      ]
+      classifications_to_include = var.maintenance_configuration.windows_classifications_to_include
     }
-    linux { classifications_to_include = [
-      "Critical",
-      "Security"
-    ] }
+    linux {
+      classifications_to_include = var.maintenance_configuration.linux_classifications_to_include
+    }
   }
   window {
-    start_date_time = "2026-11-17 14:00"
-    time_zone       = "Eastern Standard Time"
-    recur_every     = "Week"
-    duration        = "03:00"
+    start_date_time = var.maintenance_configuration.window.start_date_time
+    time_zone       = var.maintenance_configuration.window.time_zone
+    recur_every     = var.maintenance_configuration.window.recur_every
+    duration        = var.maintenance_configuration.window.duration
 
   }
 }
 
 resource "azurerm_maintenance_assignment_dynamic_scope" "this" {
-  name                         = "dev-servers-dynamic-scope"
+  name                         = "${lower(var.tags["Env"])}-servers-dynamic-scope"
   maintenance_configuration_id = azurerm_maintenance_configuration.this.id
   filter {
     resource_types = ["Microsoft.Compute/virtualMachines"]

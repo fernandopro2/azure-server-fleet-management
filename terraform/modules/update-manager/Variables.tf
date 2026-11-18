@@ -9,3 +9,7 @@ variable "rgname" {
 variable "tags" {
 
 }
+
+variable "maintenance_configuration" {
+
+}
