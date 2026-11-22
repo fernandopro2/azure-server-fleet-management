@@ -15,14 +15,14 @@ module "networking" {
 }
 
 module "virtual-machine" {
-  source    = "./modules/virtual-machine"
-  rgname    = azurerm_resource_group.this.name
-  rg_id     = azurerm_resource_group.this.id
-  location  = azurerm_resource_group.this.location
-  subnet_id = module.networking.subnet_id
-  vms       = local.vmconfig
-  tags      = local.tags
-
+  source       = "./modules/virtual-machine"
+  rgname       = azurerm_resource_group.this.name
+  rg_id        = azurerm_resource_group.this.id
+  location     = azurerm_resource_group.this.location
+  subnet_id    = module.networking.subnet_id
+  vms          = local.vmconfig
+  tags         = local.tags
+  key_vault_id = var.key_vault_id
 }
 
 module "log-analytics" {

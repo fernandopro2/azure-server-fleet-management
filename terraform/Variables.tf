@@ -37,6 +37,10 @@ variable "vms" {
   }))
 }
 
+variable "key_vault_id" {
+  type = string
+}
+
 variable "lawretention" {
   type = number
 }

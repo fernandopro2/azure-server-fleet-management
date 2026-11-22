@@ -1,5 +1,14 @@
 terraform {
+
+  cloud {
+    organization = "fernandosantos-org"
+    workspaces {
+      tags = ["azure-server-fleet-management"]
+    }
+  }
+
   required_providers {
+
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 5.0"

@@ -12,12 +12,12 @@ resource "azurerm_network_interface" "this" {
 
 data "azurerm_key_vault_secret" "windows-pass" {
   name         = "windows-pass"
-  key_vault_id = "/subscriptions/c82de67e-4e3d-4338-8168-230aa3dd3831/resourceGroups/rg-m365audit-saas/providers/Microsoft.KeyVault/vaults/kv-m365-audit-saas"
+  key_vault_id = var.key_vault_id
 }
 
 data "azurerm_key_vault_secret" "linux-pass" {
   name         = "linux-pass"
-  key_vault_id = "/subscriptions/c82de67e-4e3d-4338-8168-230aa3dd3831/resourceGroups/rg-m365audit-saas/providers/Microsoft.KeyVault/vaults/kv-m365-audit-saas"
+  key_vault_id = var.key_vault_id
 }
 
 resource "azurerm_windows_virtual_machine" "this" {

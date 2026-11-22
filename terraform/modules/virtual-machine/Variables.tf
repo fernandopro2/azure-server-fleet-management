@@ -11,6 +11,10 @@ variable "vms" {
   }))
 }
 
+variable "key_vault_id" {
+  type = string
+}
+
 variable "rgname" {
   type = string
 }
